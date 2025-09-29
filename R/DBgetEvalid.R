@@ -356,6 +356,7 @@ DBgetEvalid <- function(states = NULL,
     if (!is.null(survey_layer) && is.data.frame(survey_layer)) {
       SURVEY <- survey_layer
     } else {
+
       SURVEY <- DBgetCSV("SURVEY", stcdlst, 
                          returnDT=TRUE, stopifnull=FALSE) 
       if (length(unique(SURVEY$STATECD)) < length(stcdlst)) {
@@ -446,7 +447,7 @@ DBgetEvalid <- function(states = NULL,
       ppsaflds <- names(POP_PLOT_STRATUM_ASSGN)
     }
   }
-  
+
   ######################################################################################
   ## Query tables - SURVEY, POP_EVAL, POP_EVAL_GRP, POP_EVAL_TYP
   ######################################################################################
@@ -585,7 +586,7 @@ DBgetEvalid <- function(states = NULL,
     #        as.numeric(paste0("20", substr(x, nchar(x)-1, nchar(x))))
     #    }
   }
-  
+
   ######################################################################################
   ## Check if no pop tables in input data
   ######################################################################################

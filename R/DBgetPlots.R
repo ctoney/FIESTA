@@ -2435,6 +2435,10 @@ DBgetPlots <- function (states = NULL,
 	    if (is.null(pltcondux)) {
 	      message("pltcondu query is invalid")
 	      message("\n", pltcondu.qry)
+	      pltcondux <- NULL
+	    } else if (nrow(pltcondux) == 0) {
+	      message("no change data exists for ", state)
+	      pltcondux <- NULL
 	    } else {
 	      pltcondux <- data.table::setDT(pltcondux)
 
