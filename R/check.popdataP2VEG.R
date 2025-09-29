@@ -499,7 +499,7 @@ check.popdataP2VEG <-
   }  
   dbqueries$adjfactors <- adjfactors.qry
     
-  
+
   ## 5.4 Build query for plot-level adjustment factors
   ###################################################################
   adja. <- "adj."
@@ -612,7 +612,7 @@ check.popdataP2VEG <-
       "\n JOIN ", SCHEMA., pltxnm, " p ", pjoinqry,
       "\n JOIN ", SCHEMA., condxnm, " c ", cjoinqry)
     subpcjoinqry <- getjoinqry(c(subplotid, condid), c(cuniqueid, condid), subpca., conda.)
-    pcfromqry <- paste0(pcfromqry,
+    P2VEGpcfromqry <- paste0(pcfromqry,
                         "\n JOIN subpcprop subpc ", subpcjoinqry)
     
     ## Build SELECT query for pltcondx query
@@ -630,6 +630,9 @@ check.popdataP2VEG <-
     pcfromqry <- paste0(
       "\n FROM pltids",
       "\n JOIN ", SCHEMA., condxnm, " c ", cjoinqry)
+    subpcjoinqry <- getjoinqry(c(subplotid, condid), c(cuniqueid, condid), subpca., conda.)
+    P2VEGpcfromqry <- paste0(pcfromqry,
+                        "\n JOIN subpcprop subpc ", subpcjoinqry)
   }  
   
   if (defaultVars) {
@@ -665,18 +668,27 @@ check.popdataP2VEG <-
   if (is.null(pvars)) {
     ## Build query for pltcondx
     pltcondx.qry <- paste0("SELECT ", cselectqry, ", 1 AS TOTAL",
-                           "\n", P2VEGselectqry,
                            pcfromqry)
+    
+    ## Build query for pltcondxP2VEG
+    pltcondxP2VEG.qry <- paste0("SELECT ", cselectqry, ", 1 AS TOTAL,",
+                           "\n", P2VEGselectqry,
+                           P2VEGpcfromqry)
     
   } else {  
     ## Build query for pltcondx
     pltcondx.qry <- paste0("SELECT ", cselectqry, ", ",
+                           "\n", pselectqry, ", 1 AS TOTAL",
+                           pcfromqry)
+    ## Build query for pltcondxP2VEG
+    pltcondxP2VEG.qry <- paste0("SELECT ", cselectqry, ", ",
                            "\n", pselectqry, ", 1 AS TOTAL,",
                            "\n", P2VEGselectqry,
-                           pcfromqry)
+                           P2VEGpcfromqry)
   }
   dbqueries$pltcondx <- pltcondx.qry
-  
+  dbqueries$pltcondxP2VEG <- pltcondxP2VEG.qry
+ 
   
   ## 6.4. Build WITH queries for pltcondx
   ###############################################################
@@ -688,13 +700,13 @@ check.popdataP2VEG <-
                             "\n(", sumpropqry, "),",
                             "\n----- pltcondx",
                             "\npltcondx AS",
-                            "\n(", pltcondx.qry, ")")
+                            "\n(", pltcondxP2VEG.qry, ")")
   dbqueriesWITH$pltcondxWITH <- pltcondxWITHqry
   
   ## Build WITH query for pltcondx, including pltidsadj WITH query
   pltcondxadjWITHqry <- paste0(pltidsadjWITHqry, ", ",
                                "\npltcondx AS",
-                               "\n(", pltcondx.qry, ")")
+                               "\n(", pltcondxP2VEG.qry, ")")
   dbqueriesWITH$pltcondxadjWITH <- pltcondxadjWITHqry
   
   
@@ -708,7 +720,7 @@ check.popdataP2VEG <-
                           "\nsubpcprop AS ",
                           "\n(", sumpropqry, ")",
                           "\n-------------------------------------------",
-                          "\n", pltcondx.qry)
+                          "\n", pltcondxP2VEG.qry)
     if (pltaindb) {
       pltcondx <- tryCatch(
         DBI::dbGetQuery(dbconn, pltcondxqry),

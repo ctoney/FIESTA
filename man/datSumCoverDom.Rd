@@ -18,6 +18,7 @@ datSumCoverDom(
   bydomainlst = NULL,
   covtype = "P2VEG",
   tsumvar = "COVER_PCT",
+  tsumunits = "pct",
   tfilter = NULL,
   tdomvar = NULL,
   tdomvarlst = NULL,
@@ -78,10 +79,13 @@ plt/cond table if tables are provided.}
 
 \item{covtype}{String. Cover type for estimates (e.g. 'P2VEG')}
 
-\item{tsumvar}{String. Variable (or derivation) in tree to summarize.
+\item{tsumvar}{String. Variable (or derivation) in tab to summarize.
 If covtype = 'P2VEG' and summing by plot or condition, the COVER_PCT
 variable in table is divided by 4 number of subplots and by 100 to convert
-percent to proportion ('SUM(COVER_PCT) / 4 / 100').}
+percent to proportion ('SUM(COVER_PCT) / 4').}
+
+\item{tsumunits}{String. c('prop', 'pct'). If 'prop', the output is 
+proportion, if 'pct', the output is as a percent.}
 
 \item{tfilter}{String. Filter to subset the tree data before aggregating
 (e.g., "STATUSCD == 1"). This must be in R syntax. If tfilter=NULL, user is

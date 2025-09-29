@@ -208,7 +208,6 @@ check.rowcol <-
                    tfilter = tfilter,
                    popdatindb = popdatindb, popconn = popconn, SCHEMA. = SCHEMA.,
                    domlut = domlut, domvarlst = domvarlst, spcdname = spcdname)
-                              
     uniquerow <- rowvardat$uniquetabvar
     rowvar <- rowvardat$tabvar
     rowvarnm <- rowvardat$tabvarnm

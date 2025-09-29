@@ -101,6 +101,9 @@ check.estdata <-
     pltidsadjWITHqry <- dbqueriesWITH$pltidsadjWITH
     pltcondxqry <- dbqueries$pltcondx
     pltcondflds <- c(pltflds, condflds)
+    if (popType == "P2VEG") {
+      pltcondxP2VEGqry <- dbqueries$pltcondxP2VEG
+    }
   } else {
     pltcondflds <- names(pltcondx)
     pltidsadjWITHqry=pltidsWITH <- NULL
@@ -237,6 +240,7 @@ check.estdata <-
         pltcondx <- pcchk
       }
     } else {
+      
       pltcondx.qry <- paste0(pltcondxqry,
                             pcwhereqry)
       
@@ -247,15 +251,28 @@ check.estdata <-
                                 "\n(", pltcondx.qry, ")")
       #dbqueriesWITH$pltcondxWITH <- pltcondxWITHqry
 
-      ## Build WITH query for pltcondx, including pltidsadj WITH query
-      pltcondxadjWITHqry <- paste0(pltidsadjWITHqry, ", ",
-                                 "\n----- pltcondx",
-                                 "\npltcondx AS",
-                                 "\n(", pltcondx.qry, ")")
-      #dbqueriesWITH$pltcondxadjWITH <- pltcondxadjWITHqry
+      if (popType == "P2VEG") {
+        pltcondxP2VEG.qry <- paste0(pltcondxP2VEGqry,
+                                    pcwhereqry)
+        
+        ## Build WITH query for pltcondx, including pltidsadj WITH query
+        pltcondxadjWITHqry <- paste0(pltidsadjWITHqry, ", ",
+                                     "\n----- pltcondx",
+                                     "\npltcondx AS",
+                                     "\n(", pltcondxP2VEG.qry, ")")
+        #dbqueriesWITH$pltcondxadjWITH <- pltcondxadjWITHqry
+        
+      } else {
+        
+        ## Build WITH query for pltcondx, including pltidsadj WITH query
+        pltcondxadjWITHqry <- paste0(pltidsadjWITHqry, ", ",
+                                     "\n----- pltcondx",
+                                     "\npltcondx AS",
+                                     "\n(", pltcondx.qry, ")")
+        #dbqueriesWITH$pltcondxadjWITH <- pltcondxadjWITHqry
+      }
     }
   }
-  
 
   ## Check sumunits
   ########################################################

@@ -544,6 +544,7 @@ modGBp2veg <- function(GBpopdat,
                    cond = pltcondx,
                    covtype = "P2VEG",
                    bycond = TRUE,
+                   tsumunits = "prop",
                    tfilter = vfilter,
                    bydomainlst = domainlst,
                    tdomvar = vdomvar,
@@ -717,7 +718,6 @@ modGBp2veg <- function(GBpopdat,
                    strwtvar = strwtvar,
                    totals = totals,
                    sumunits = sumunits,
-                   unit.action = unit.action,
                    uniquerow = uniquerow,
                    uniquecol = uniquecol,
                    row.orderby = row.orderby,
@@ -742,11 +742,15 @@ modGBp2veg <- function(GBpopdat,
   message("getting output...")
   estnm <- ifelse(esttype == "RATIO", "estn", "est")
   percent <- ifelse(esttype == "RATIO", TRUE, FALSE)
-
+  
+  ## keep NA and 0 values in raw data
+  raw.keep0 <- ifelse (raw.keep0 || unit.action == "keep", TRUE, FALSE)
+  
   tabs <- 
     est.outtabs(esttype = esttype, 
                 sumunits = sumunits, areavar = areavar, 
                 unitvar = unitvar, unitvars = unitvars, 
+                unitarea = unitarea,
                 unit_totest = unit_totest, 
                 unit_rowest = unit_rowest, unit_colest = unit_colest, 
                 unit_grpest = unit_grpest,

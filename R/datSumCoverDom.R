@@ -36,10 +36,12 @@
 #' summing tree data by (e.g., SPCD). Variables must be in tree table or
 #' plt/cond table if tables are provided.
 #' @param covtype String. Cover type for estimates (e.g. 'P2VEG')
-#' @param tsumvar String. Variable (or derivation) in tree to summarize.
+#' @param tsumvar String. Variable (or derivation) in tab to summarize.
 #' If covtype = 'P2VEG' and summing by plot or condition, the COVER_PCT
 #' variable in table is divided by 4 number of subplots and by 100 to convert
-#' percent to proportion ('SUM(COVER_PCT) / 4 / 100').
+#' percent to proportion ('SUM(COVER_PCT) / 4').
+#' @param tsumunits String. c('prop', 'pct'). If 'prop', the output is 
+#' proportion, if 'pct', the output is as a percent.
 #' @param tfilter String. Filter to subset the tree data before aggregating
 #' (e.g., "STATUSCD == 1"). This must be in R syntax. If tfilter=NULL, user is
 #' prompted.  Use tfilter="NONE" if no filters.
@@ -98,6 +100,7 @@ datSumCoverDom <- function(tab = NULL,
                            bydomainlst = NULL,
                            covtype = "P2VEG",
                            tsumvar = "COVER_PCT",
+                           tsumunits = "pct",
                            tfilter = NULL, 
                            tdomvar = NULL, 
                            tdomvarlst = NULL, 
@@ -510,9 +513,14 @@ datSumCoverDom <- function(tab = NULL,
     }
     
     ## Check unique identifiers
-    subplotid <- tabIDs[[subplot]]
-    subpid <- tabIDs[["subpid"]]
-    subpids <- c(subplotid, subpid)
+    if (!is.null(subplotnm)) {
+      subplotid <- tabIDs[[subplot]]
+      subpid <- tabIDs[["subpid"]]
+    } else {
+      subplotid <- findnm("PLT_CN", treeflds)
+      subpid <- findnm("SUBP", treeflds)
+      subpids <- c(subplotid, subpid)
+    }
     
     ## Check subpids
     if (!is.null(subp_condnm)) {
@@ -528,21 +536,34 @@ datSumCoverDom <- function(tab = NULL,
     
     ## check pltidsWITHqry
     if (is.null(pltidsWITHqry)) {
-      if (bycond && !is.null(subp_condnm)) {
-        pltidsWITHqry <- paste0("WITH",
-                                "\npltids AS",
-                                "\n(SELECT PLT_CN, SUBP, CONDID",
-                                "\n FROM ", SCHEMA., subp_condnm, ")")
-      } else {
-        pltidsWITHqry <- paste0("WITH",
-                                "\npltids AS",
-                                "\n(SELECT PLT_CN, SUBP",
-                                "\n FROM ", SCHEMA., subplotnm, ")")
+      if (!is.null(subplotnm) || !is.null(subp_condnm)) {
+        
+        if (!is.null(subplotnm)) {
+          pltidsWITHqry <- paste0("WITH",
+                                  "\npltidsSUBP AS",
+                                  "\n(SELECT ", toString(subpids),
+                                  "\n FROM ", SCHEMA., subplotnm, ")")
+        } else if (!is.null(subp_condnm)) {
+          if (bycond) {
+            pltidsWITHqry <- paste0("WITH",
+                                    "\npltidsSUBP AS",
+                                    "\n(SELECT ", toString(c(subpids, condid)),
+                                    "\n FROM ", SCHEMA., subp_condnm, ")")
+          } else {
+            pltidsWITHqry <- paste0("WITH",
+                                    "\npltidsSUBP AS",
+                                    "\n(SELECT DISTINCT ", toString(subpids),
+                                    "\n FROM ", SCHEMA., subp_condnm, ")")
+          }
+        }
+        pltidsnm <- "pltids"
+        pltidsa. <- "pltids."
+        pltidsid <- "PLT_CN"
+        
+        ## Set alias path for group by unique identifier
+        grpby. <- "subp."
       }
-      pltidsnm <- "pltids"
-      pltidsa. <- "pltids."
-      pltidsid <- "PLT_CN"
-      
+    
     } else {
       
       subpjoinqry <- getjoinqry(subplotid, pltidsid, "subp.", pltidsa.)
@@ -565,13 +586,13 @@ datSumCoverDom <- function(tab = NULL,
       }
       ## Set name of pltids and alias path
       #subplotnm <- "pltidsSUBP"
+      
+      ## Set alias path for group by unique identifier
+      grpby. <- "subp."
     }
-    if (getadjplot && is.null(subp_condnm) || is.null(subplotnm)) {
+    if (getadjplot && (is.null(subp_condnm) || is.null(subplotnm))) {
       stop("must include subplot and subp_cond tables to calculate adjustment factors")
     }
-    
-    ## Set alias path for group by unique identifier
-    grpby. <- "subp."
     
   } else if (!is.null(plt)) {
     pltindb <- FALSE
@@ -633,7 +654,7 @@ datSumCoverDom <- function(tab = NULL,
               return(NULL)
             })
     } 
-    
+
     # ## set key 
     # if (!is.null(pltx) && is.data.frame(pltx)) {
     #   pltx <- setDT(pltx)
@@ -661,7 +682,7 @@ datSumCoverDom <- function(tab = NULL,
     pltidsnm <- "pltids"
     grpby. <- pltidsa.
   }
-  
+
   ## Check cond table
   if (!is.null(cond)) {
     condindb <- FALSE
@@ -805,9 +826,9 @@ datSumCoverDom <- function(tab = NULL,
           }
         }
       }
-      #if (grepl("pc.", pcwhereqry)) {
-      #  pcwhereqry <- gsub("pc.", "c.", pcwhereqry)
-      #}
+      if (grepl("pc.", pcwhereqry)) {
+       pcwhereqry <- gsub("pc.", "c.", pcwhereqry)
+      }
     }
     
     ## If ACI, include COND_STATUS_CD = 1 to exclude trees measured on ACI plots
@@ -823,6 +844,12 @@ datSumCoverDom <- function(tab = NULL,
           if (!(grepl("COND_STATUS_CD", pcwhereqry, ignore.case = TRUE) &&
                 (grepl("COND_STATUS_CD=1", gsub(" ", "", pcwhereqry), ignore.case = TRUE) ||
                  grepl("COND_STATUS_CDin(1)", gsub(" ", "", pcwhereqry), ignore.case = TRUE)))) {
+            pcwhereqry <- paste0(pcwhereqry, " AND pc.COND_STATUS_CD = 1")
+          }
+        } else if (!is.null(pltidsWITHqry)) {
+          if (!(grepl("COND_STATUS_CD", pltidsWITHqry, ignore.case = TRUE) &&
+                (grepl("COND_STATUS_CD=1", gsub(" ", "", pltidsWITHqry), ignore.case = TRUE) ||
+                 grepl("COND_STATUS_CDin(1)", gsub(" ", "", pltidsWITHqry), ignore.case = TRUE)))) {
             pcwhereqry <- paste0(pcwhereqry, " AND pc.COND_STATUS_CD = 1")
           }
         } else {
@@ -893,8 +920,7 @@ datSumCoverDom <- function(tab = NULL,
       grpby. <- "pltids."
     }
   }
-  
-
+ 
   ## Check checkNA
   ##########################################################################
   checkNA <- pcheck.logical(checkNA, varnm="checkNA", title="Check NA values?",
@@ -1095,7 +1121,7 @@ datSumCoverDom <- function(tab = NULL,
   twithvars <- c("CONDID", "SUBP")
   
   ## Build twithSelect
-  twithSelect <- toString(c(unique(c(tsumuniqueid, twithvars)), tdomainlst, tsumvar))
+  twithSelect <- toString(paste0(talias., c(unique(c(tsumuniqueid, twithvars)), tdomainlst, tsumvar)))
   
 
   ## Build final select statement for tdat WITH query
@@ -1148,6 +1174,9 @@ datSumCoverDom <- function(tab = NULL,
     
   } else {
     uniqueid <- tuniqueid
+    if (bysubp) {
+      uniqueid <- unique(c(uniqueid, subpids))
+    }
     if (bycond) {
       uniqueid <- c(uniqueid, condid)
     }
@@ -1177,8 +1206,8 @@ datSumCoverDom <- function(tab = NULL,
   tjointype <- ifelse((is.null(pcdomainlst) || length(pcdomainlst) == 0), "JOIN", "LEFT JOIN")
   
   if (bysubp) {
-    subpa. <- "subp."
-    tfromqry <- paste0("\nFROM pltidsSUBP subp")
+    #subpa. <- "subp."
+    tfromqry <- paste0("\nFROM tdat")
     if (!is.null(condnm)) {
       conda. <- "pc."
       if (bycond) {
@@ -1299,8 +1328,14 @@ datSumCoverDom <- function(tab = NULL,
       tselectqry <- paste0(tselectqry, ", ", domclassifyqry)
     }
   } else if (!is.null(domainlst) && length(domainlst) > 0) {
-    tselectqry <- paste0(tselectqry, ", ", toString(domainlst))
-    tgrpbyvars <- unique(c(tgrpbyvars, domainlst))
+    if (length(pcdomainlst) > 0) {
+      tselectqry <- paste0(tselectqry, ", ", toString(paste0("pc.", pcdomainlst)))
+      tgrpbyvars <- unique(c(tgrpbyvars, pcdomainlst))
+    }
+    if (length(tdomainlst) > 0) {
+      tselectqry <- paste0(tselectqry, ", ", toString(paste0("tdat.", tdomainlst)))
+      tgrpbyvars <- unique(c(tgrpbyvars, tdomainlst))
+    }
   }
 
   ## Build select tree query
@@ -1367,11 +1402,15 @@ datSumCoverDom <- function(tab = NULL,
   # setkeyv(setDT(sumdat), uniqueidchk)
   setkeyv(setDT(sumdat), uniqueid)
 
+  if (tsumunits == "pct" && !bysubp) {
+    sumdat[, (tsumvarnm) := .SD * 100, .SDcols=tsumvarnm]
+  }
   ## Round digits
   if (!is.null(tround)) {
     sumdat[, (tsumvarnm) := round(.SD, tround), .SDcols=tsumvarnm]
   }
 
+  
   ######################################################################## 
   ## Check tdomvar and tdomvar2
   ######################################################################## 
@@ -1527,6 +1566,7 @@ datSumCoverDom <- function(tab = NULL,
       }
     }
 
+    
     ######################################################################## 
     ## If pivot=FALSE
     ######################################################################## 
@@ -1634,6 +1674,7 @@ datSumCoverDom <- function(tab = NULL,
       treesum <- sumdat
     }
   } 
+  
 
   #### WRITE TO FILE
   #############################################################

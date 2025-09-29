@@ -78,13 +78,15 @@ check.tabvar <- function(popType, tabvartype, tabvar, tab.orderby,
   ###################################################
   if (is.null(title.tabvar)) {
     title.tabvar <- 
-      ifelse (tabvar %in% ref_titles[["DOMVARNM"]],
-              ref_titles[ref_titles[["DOMVARNM"]] == tabvar, "DOMTITLE"],
-              ifelse (sub("PREV_", "", tabvar) %in% ref_titles[["DOMVARNM"]],
-                      paste0("Previous ", tolower(ref_titles[ref_titles[["DOMVARNM"]] ==
-                            sub("PREV_", "", tabvar), "DOMTITLE"])), tabvar))
+      ifelse (tabvar == "GROWTH_HABIT_CD", "Growth habit", 
+          ifelse (tabvar == "LAYER", "Vertical layer", 
+              ifelse (tabvar %in% ref_titles[["DOMVARNM"]],
+                        ref_titles[ref_titles[["DOMVARNM"]] == tabvar, "DOMTITLE"],
+                  ifelse (sub("PREV_", "", tabvar) %in% ref_titles[["DOMVARNM"]],
+                        paste0("Previous ", tolower(ref_titles[ref_titles[["DOMVARNM"]] ==
+                            sub("PREV_", "", tabvar), "DOMTITLE"])), tabvar))))
   }
-  
+
   ## Check tablut
   if (!is.null(tablut)) {
     if (is.vector(tablut) && length(tablut) > 1) {
@@ -96,9 +98,12 @@ check.tabvar <- function(popType, tabvartype, tabvar, tab.orderby,
                              caption = paste0(tabvartype, " look up?"))
     }
     tablut <- tablut[!duplicated(tablut)]
+    
+    if (title.tabvar == tabvar && ncol(tablut) > 1) {
+      title.tabvar <- names(tablut)[names(tablut) != tabvar]
+    }
   }
 
-  
   ##################################################################################
   ## Check for lookup tables
   ##################################################################################
@@ -126,7 +131,7 @@ check.tabvar <- function(popType, tabvartype, tabvar, tab.orderby,
       }
     }
   } else {  ## domlut is null
-    
+  
     ## Build fromqry for tabvar 
     ###############################################
     if (tabvar %in% pltcondflds) {
@@ -162,7 +167,6 @@ check.tabvar <- function(popType, tabvartype, tabvar, tab.orderby,
           tfilter <- check.logic(seedflds, statement = tfilter, stopifinvalid = FALSE)
         }
       } else if (tabvar %in% treeflds) {
-
         bytdom <- TRUE
         tabisdb <- isdbt
         tabflds <- treeflds
@@ -187,7 +191,7 @@ check.tabvar <- function(popType, tabvartype, tabvar, tab.orderby,
           }
         }
       }
-    
+   
       ## build tab fromqry
       if (!is.null(pltcondx)) {
         tabfromqry <- paste0(
@@ -213,7 +217,7 @@ check.tabvar <- function(popType, tabvartype, tabvar, tab.orderby,
         }
       }
     }  
-    
+   
     ## define where statement (if tab.add0, get all values in population)
     whereqry.tab <- whereqry
     if (tab.add0 && !is.null(whereqry)) {
@@ -228,7 +232,7 @@ check.tabvar <- function(popType, tabvartype, tabvar, tab.orderby,
         whereqry.tab <- paste0("\nWHERE ", tfilter)
       }
     }
-    
+   
     ## Check tab.orderby
     ###############################################
     if (!is.null(tab.orderby) && tab.orderby != "NONE") {
@@ -352,7 +356,6 @@ check.tabvar <- function(popType, tabvartype, tabvar, tab.orderby,
                whereqry.tab,
                "\nORDER BY ", tabvar)
 
-      
       #message("getting unique values for ", tabvar, ":\n", cuniquex.qry, "\n")
       if (tabisdb) {
         if (!is.null(withqry)) {
@@ -586,7 +589,6 @@ check.tabvar <- function(popType, tabvartype, tabvar, tab.orderby,
         tabuniquex <- sort(unique(c(uniquex, suniquex)))
       }   ## end check seedling table
 
-      
       ## Check values in tablut
       if (!is.null(tablut)) {
         tablutvals <- tablut[[tabvar]]
@@ -632,10 +634,10 @@ check.tabvar <- function(popType, tabvartype, tabvar, tab.orderby,
         if (tabvar %in% treeflds) {
           if (tabvar %in% c("GROWTH_HABIT_CD", "LAYER")) {
             if (tabvar == "GROWTH_HABIT_CD") {
-              tablut <- ref_growth_habit
+              tablut <- data.table(ref_growth_habit)
               tabLUTnm <- "GROWTH_HABIT_NM"
             } else {
-              tablut <- ref_layer
+              tablut <- data.table(ref_layer)
               tabLUTnm <- "LAYER_NM"
             }
 
@@ -776,7 +778,7 @@ check.tabvar <- function(popType, tabvartype, tabvar, tab.orderby,
       }  ## end if (tab.FIAname & !is.null(tablut))
     }  ## end !is.null(tab.orderby) && tab.orderby != "NONE"
   }  ## end domlut is null
-  
+
 
   ############################################################################
   ## create uniquetabvar add create factors
@@ -805,7 +807,7 @@ check.tabvar <- function(popType, tabvartype, tabvar, tab.orderby,
   } else if (!is.null(tabuniquex)) {
     uniquetabvar <- as.data.table(tabuniquex)
     names(uniquetabvar) <- tabvarnew
-    
+
     if (tabvar == "GROWTH_HABIT_CD") {
       ghcodes <- ref_growth_habit[[tabvar]]
       ghord <- ghcodes[ghcodes %in% tabuniquex]
@@ -974,13 +976,12 @@ check.tabvar <- function(popType, tabvartype, tabvar, tab.orderby,
       uniquetabvar <- setorder(uniquetabvar, -SITECLCD)
     if (tab.FIAname && "GSSTKCD" %in% names(uniquetabvar))
       uniquetabvar <- setorder(uniquetabvar, -GSSTKCD)
-    
+
     ## Create factors for ordering
     uniquetabvar <- uniquetabvar[, lapply(.SD, makefactor)]
     setkeyv(uniquetabvar, tabvarnew)
     setorderv(uniquetabvar, tabvarnew, na.last=TRUE)
   }
-  
   
   returnlst <- list(uniquetabvar = uniquetabvar,  
                     tabvar = tabvar, tabvarnm = tabvarnm, 
