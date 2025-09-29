@@ -246,16 +246,6 @@ getGBestimates <- function(esttype,
                  unitvar = unitvar,
                  strvar = strvar,
                  domain = rowvar)
-    
-    if (unit.action %in% c("keep", "combine") && 
-        length(unique(unit_rowest[[unitvar]])) < nbrunits) {
-      missunits <- estunits[!estunits %in% unique(unit_rowest[[unitvar]])]
-      missunitsdf <- data.frame(missunits)
-      names(missunitsdf) <- unitvar
-      unit_rowest <-rbindlist(list(unit_rowest, missunitsdf), fill=TRUE)
-      unit_rowest <- DT_NAto0(unit_rowest, cols = c("nhat", "nhat.var", "NBRPLT.gt0"))
-      unit_rowest <- setorderv(unit_rowest, unitvar)
-    } 
   }
 
 
@@ -324,15 +314,15 @@ getGBestimates <- function(esttype,
                  strvar = strvar,
                  domain = colvar)
 
-    if (unit.action %in% c("keep", "combine") && 
-        length(unique(unit_colest[[unitvar]])) < nbrunits) {
-      missunits <- estunits[!estunits %in% unique(unit_colest[[unitvar]])]
-      missunitsdf <- data.frame(missunits)
-      names(missunitsdf) <- unitvar
-      unit_colest <-rbindlist(list(unit_colest, missunitsdf), fill=TRUE)
-      unit_colest <- DT_NAto0(unit_colest, cols = c("nhat", "nhat.var", "NBRPLT.gt0"))
-      unit_colest <- setorderv(unit_colest, unitvar)
-    } 
+    # if (unit.action %in% c("keep", "combine") && 
+    #     length(unique(unit_colest[[unitvar]])) < nbrunits) {
+    #   missunits <- estunits[!estunits %in% unique(unit_colest[[unitvar]])]
+    #   missunitsdf <- data.frame(missunits)
+    #   names(missunitsdf) <- unitvar
+    #   unit_colest <-rbindlist(list(unit_colest, missunitsdf), fill=TRUE)
+    #   unit_colest <- DT_NAto0(unit_colest, cols = c("nhat", "nhat.var", "NBRPLT.gt0"))
+    #   unit_colest <- setorderv(unit_colest, unitvar)
+    # } 
     
     ## Get estimates for cell values (grpvar)
     #############################################################################
@@ -395,15 +385,15 @@ getGBestimates <- function(esttype,
                  strvar = strvar,
                  domain = grpvar)
     
-    if (unit.action %in% c("keep", "combine") && 
-        length(unique(unit_grpest[[unitvar]])) < nbrunits) {
-      missunits <- estunits[!estunits %in% unique(unit_grpest[[unitvar]])]
-      missunitsdf <- data.frame(missunits)
-      names(missunitsdf) <- unitvar
-      unit_grpest <-rbindlist(list(unit_grpest, missunitsdf), fill=TRUE)
-      unit_grpest <- DT_NAto0(unit_grpest, cols = c("nhat", "nhat.var", "NBRPLT.gt0"))
-      unit_grpest <- setorderv(unit_grpest, unitvar)
-    } 
+    # if (unit.action %in% c("keep", "combine") && 
+    #     length(unique(unit_grpest[[unitvar]])) < nbrunits) {
+    #   missunits <- estunits[!estunits %in% unique(unit_grpest[[unitvar]])]
+    #   missunitsdf <- data.frame(missunits)
+    #   names(missunitsdf) <- unitvar
+    #   unit_grpest <-rbindlist(list(unit_grpest, missunitsdf), fill=TRUE)
+    #   unit_grpest <- DT_NAto0(unit_grpest, cols = c("nhat", "nhat.var", "NBRPLT.gt0"))
+    #   unit_grpest <- setorderv(unit_grpest, unitvar)
+    # } 
     
   }
 
@@ -422,9 +412,15 @@ getGBestimates <- function(esttype,
     unitarea <- tabs$tab1
     unit_rowest <- tabs$tab2
 
+    ## order rows
     if (!is.null(row.orderby) && row.orderby != "NONE") {
       setorderv(unit_rowest, c(row.orderby))
     }
+    ## order columns
+    ordercols <- unique(c(unitvar, rowvar, names(uniquerow)))
+    unit_rowest <- setcolorder(unit_rowest, unique(c(ordercols, names(unit_rowest))))
+    
+    ## setkey and merge area
     setkeyv(unit_rowest, unitvar)
     unit_rowest <- unit_rowest[unitarea, nomatch=0]
 
@@ -452,9 +448,16 @@ getGBestimates <- function(esttype,
     unitarea <- tabs$tab1
     unit_colest <- tabs$tab2
 
+    ## order rows
     if (!is.null(col.orderby) && col.orderby != "NONE") {
       setorderv(unit_colest, c(col.orderby))
     }
+    
+    ## order columns
+    ordercols <- unique(c(unitvar, colvar, names(uniquecol)))
+    unit_colest <- setcolorder(unit_colest, unique(c(ordercols, names(unit_colest))))
+    
+    ## setkey and merge area
     setkeyv(unit_colest, unitvar)
     unit_colest <- unit_colest[unitarea, nomatch=0]
 
@@ -489,6 +492,7 @@ getGBestimates <- function(esttype,
     #  unit_grpest <- unit_rowest[unit_grpest$nhat > 0,]
     #}
 
+    ## order rows
     if (!is.null(row.orderby) && row.orderby != "NONE") {
       if (!is.null(col.orderby) && col.orderby != "NONE") {
         setorderv(unit_grpest, c(row.orderby, col.orderby))
@@ -498,6 +502,12 @@ getGBestimates <- function(esttype,
     } else if (!is.null(col.orderby) && col.orderby != "NONE") {
       setorderv(unit_grpest, c(col.orderby))
     }
+    
+    ## order columns
+    ordercols <- unique(c(unitvar, rowvar, names(uniquerow), colvar, names(uniquecol)))
+    unit_grpest <- setcolorder(unit_grpest, unique(c(ordercols, names(unit_grpest))))
+    
+    ## setkey and merge area
     setkeyv(unit_grpest, unitvar)
     unit_grpest <- unit_grpest[unitarea, nomatch=0]
 
