@@ -874,7 +874,7 @@ getpopFilterqry <- function(popType,
                         pltafromqry)
 
     ## Add pwhereqry to pltidsqry
-    if (!is.null(pwhereqry) || pwhereqry != "") {
+    if (!is.null(pwhereqry) && pwhereqry != "") {
       pltidsqry <- paste0(pltidsqry, pwhereqry)
     }
   }

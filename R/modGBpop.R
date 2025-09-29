@@ -906,7 +906,8 @@ modGBpop <- function(popType = "VOL",
     if (is.null(popcheck)) return(0)
     pltidsadj <- popcheck$pltidsadj
     pltcondx <- popcheck$pltcondx
-    pltcondflds <- popcheck$pltcondflds
+    pltflds <- popcheck$pltflds
+    condflds <- popcheck$condflds
     cuniqueid <- popcheck$cuniqueid
     condid <- popcheck$condid
     adjfactors <- popcheck$adjfactors
@@ -1237,6 +1238,13 @@ modGBpop <- function(popType = "VOL",
     #   returnlst$popconn <- dbconn
     # }
   }
+  
+  
+  if (popType == "GRM") {
+    returnlst$grow_typ_cd <- pltcheck$grow_typ_cd
+    returnlst$mort_typ_cd <- pltcheck$mort_typ_cd
+  }
+  
   
   
   ## Save list object
